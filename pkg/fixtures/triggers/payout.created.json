@@ -9,8 +9,7 @@
       "method": "post",
       "params": {
         "amount": 1100,
-        "currency": "usd",
-        "description": "(created by Stripe CLI)"
+        "currency": "usd"
       }
     }
   ]
