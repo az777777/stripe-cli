@@ -41,7 +41,7 @@ type Links struct {
 
 // Login function is used to obtain credentials via stripe dashboard.
 func Login(baseURL string, config *config.Config, input io.Reader) error {
-	links, err := GetLinks(baseURL, config.Profile.DeviceName)
+	links, err := getLinks(baseURL, config.Profile.DeviceName)
 	if err != nil {
 		return err
 	}
@@ -70,29 +70,12 @@ func Login(baseURL string, config *config.Config, input io.Reader) error {
 		}
 	}
 
+	// Call poll function
 	response, account, err := PollForKey(links.PollURL, 0, 0)
 	if err != nil {
 		return err
 	}
 
-	err = ConfigureProfile(config, response)
-	if err != nil {
-		return err
-	}
-
-	message, err := SuccessMessage(account, stripe.DefaultAPIBaseURL, response.TestModeAPIKey)
-	if err != nil {
-		fmt.Printf("> Error verifying the CLI was set up successfully: %s\n", err)
-		return err
-	}
-
-	ansi.StopSpinner(s, message, os.Stdout)
-	fmt.Println(ansi.Italic("Please note: this key will expire after 90 days, at which point you'll need to re-authenticate."))
-	return nil
-}
-
-// ConfigureProfile function sets config for this profile.
-func ConfigureProfile(config *config.Config, response *PollAPIKeyResponse) error {
 	validateErr := validators.APIKey(response.TestModeAPIKey)
 	if validateErr != nil {
 		return validateErr
@@ -110,11 +93,18 @@ func ConfigureProfile(config *config.Config, response *PollAPIKeyResponse) error
 		return profileErr
 	}
 
+	message, err := SuccessMessage(account, stripe.DefaultAPIBaseURL, response.TestModeAPIKey)
+	if err != nil {
+		fmt.Printf("> Error verifying the CLI was set up successfully: %s\n", err)
+	} else {
+		ansi.StopSpinner(s, message, os.Stdout)
+		fmt.Println(ansi.Italic("Please note: this key will expire after 90 days, at which point you'll need to re-authenticate."))
+	}
+
 	return nil
 }
 
-// GetLinks provides the URLs for the CLI to continue the login flow
-func GetLinks(baseURL string, deviceName string) (*Links, error) {
+func getLinks(baseURL string, deviceName string) (*Links, error) {
 	parsedBaseURL, err := url.Parse(baseURL)
 	if err != nil {
 		return nil, err
