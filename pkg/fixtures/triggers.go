@@ -5,6 +5,8 @@ import (
 	"sort"
 
 	"github.com/spf13/afero"
+
+	"github.com/stripe/stripe-cli/pkg/config"
 )
 
 // Events is a mapping of pre-built trigger events and the corresponding json file
@@ -99,11 +101,14 @@ func EventNames() []string {
 }
 
 // Trigger triggers a Stripe event.
-func Trigger(event string, stripeAccount string, baseURL string, apiKey string) ([]string, error) {
+func Trigger(event string, stripeAccount string, baseURL string, config *config.Config) ([]string, error) {
 	fs := afero.NewOsFs()
+	apiKey, err := config.Profile.GetAPIKey(false)
+	if err != nil {
+		return nil, err
+	}
 
 	var fixture *Fixture
-	var err error
 
 	if file, ok := Events[event]; ok {
 		fixture, err = BuildFromFixture(fs, apiKey, stripeAccount, baseURL, file)
